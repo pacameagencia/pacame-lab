@@ -1,0 +1,62 @@
+name: sites
+on:
+  push:
+    branches: [main]
+    paths: ["lab/sites.json"]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      slugs: ${{ steps.m.outputs.slugs }}
+      task: ${{ steps.m.outputs.task }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: m
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          j = json.load(open("lab/sites.json"))
+          only = j.get("only") or [s["slug"] for s in j["sites"]]
+          print("slugs=" + json.dumps(only))
+          print("task=" + j["task"])
+          PY
+  run:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        slug: ${{ fromJson(needs.plan.outputs.slugs) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Dependencias
+        run: |
+          pip install -q playwright pillow requests beautifulsoup4
+          if [ "${{ needs.plan.outputs.task }}" = "crawl" ]; then python -m playwright install --with-deps chromium; fi
+      - name: Ejecutar
+        run: python lab/${{ needs.plan.outputs.task }}.py lab/sites.json ${{ matrix.slug }} out
+      - name: Cifrar y guardar resultados
+        if: always()
+        run: |
+          mkdir -p out
+          tar -czf res.tgz -C out .
+          openssl rand -out k.bin 32
+          openssl enc -aes-256-cbc -pbkdf2 -salt -in res.tgz -out res.tgz.enc -pass file:k.bin
+          openssl pkeyutl -encrypt -pubin -inkey lab/lab.pub -pkeyopt rsa_padding_mode:oaep -in k.bin -out k.bin.enc
+          mkdir pub && mv res.tgz.enc k.bin.enc pub/
+          split -b 45m pub/res.tgz.enc pub/res.part. && rm pub/res.tgz.enc
+          cd pub
+          git init -q -b out
+          git config user.name "lab-bot"
+          git config user.email "lab-bot@users.noreply.github.com"
+          git add -A
+          git commit -qm "${{ needs.plan.outputs.task }} ${{ matrix.slug }} (${{ github.sha }})"
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" out:out-${{ needs.plan.outputs.task }}-${{ matrix.slug }}

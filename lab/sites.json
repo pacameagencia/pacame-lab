@@ -1,0 +1,18 @@
+{
+ "task": "crawl",
+ "run": 1,
+ "sites": [
+  {"slug": "bvrs", "url": "https://www.bvrs-luxurycars.com/"},
+  {"slug": "aguilera", "url": "https://aguileraautopremium.com/"},
+  {"slug": "topauto", "url": "https://www.topautomadrid.com/"},
+  {"slug": "elitewagen", "url": "https://www.elitewagen.es/"},
+  {"slug": "autofast", "url": "https://www.autofastmarbella.net/es"},
+  {"slug": "levore", "url": "https://www.levorecollection.com/"},
+  {"slug": "csm", "url": "https://csmmarbellapremiumcars.com/"},
+  {"slug": "driverz", "url": "https://www.driverzselectedcar.com/"},
+  {"slug": "pcsevilla", "url": "https://www.premiumcarssevilla.com/"},
+  {"slug": "stradale", "url": "https://stradalebilbao.com/"},
+  {"slug": "cohen", "url": "https://www.cohencars.com/es"},
+  {"slug": "crown", "url": "https://crowngallerymotors.com/"}
+ ]
+}
